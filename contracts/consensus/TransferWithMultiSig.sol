@@ -20,23 +20,23 @@ contract TransferWithMultiSig is AdminConsensus {
         address indexed owner,
         uint256 txIndex,
         address indexed to,
-        uint value
+        uint256 value
     );
 
     /**
     *@notice event confirm address owner signed for transaction with txIndex 
     */
-    event ConfirmTransaction(address indexed owner, uint indexed txIndex);
+    event ConfirmTransaction(address indexed owner, uint256 indexed txIndex);
 
     /**
     *@notice event confirm address owner refuse to confirm for transaction with txIndex
     */
-    event RevokeConfirmation(address indexed owner, uint indexed txIndex);
+    event RevokeConfirmation(address indexed owner, uint256 indexed txIndex);
 
     /**
     *@notice event that a transaction was done successfully
     */
-    event TransferToken(address indexed signator, uint indexed txIndex);
+    event TransferToken(address indexed signator, uint256 indexed txIndex);
 
     /**
     *@dev token address variable
@@ -51,32 +51,32 @@ contract TransferWithMultiSig is AdminConsensus {
     struct Transaction {
         uint256 txIndex;
         address to;
-        uint value;
+        uint256 value;
         bool executed;
-        uint numConfirmations;
+        uint256 numConfirmations;
     }
 
     /**
     *@dev mapping from tx index => owner => bool
     */ 
-    mapping(uint => mapping(address => bool)) public isConfirmed;
+    mapping(uint256 => mapping(address => bool)) public isConfirmed;
 
-    modifier txExists(uint _txIndex) {
+    modifier txExists(uint256 _txIndex) {
         require(_txIndex < _transactions.length, "tx does not exist");
         _;
     }
 
-    modifier notExecuted(uint _txIndex) {
+    modifier notExecuted(uint256 _txIndex) {
         require(!_transactions[_txIndex].executed, "tx already executed");
         _;
     }
 
-    modifier notConfirmed(uint _txIndex) {
+    modifier notConfirmed(uint256 _txIndex) {
         require(!isConfirmed[_txIndex][msg.sender], "tx already confirmed");
         _;
     }
 
-    modifier isAccepted(uint _txIndex) {
+    modifier isAccepted(uint256 _txIndex) {
         require(_transactions[_txIndex].numConfirmations * 2 >= _admins.length, "Not enough consensus!");
         _;
     }
@@ -122,7 +122,7 @@ contract TransferWithMultiSig is AdminConsensus {
     * Giao dịch chưa được thực hiện "notExecuted(indexTx)"
     * Giao dịch chưa được xác nhận bởi địa chỉ msg.sender "notConfirmed(indexTx)"
     */
-    function confirmTransaction(uint indexTx)
+    function confirmTransaction(uint256 indexTx)
         public
         onlyAdmin
         txExists(indexTx)
@@ -144,7 +144,7 @@ contract TransferWithMultiSig is AdminConsensus {
     * Giao dịch chưa được thực hiện "notExecuted(indexTx)"
     * Giao dịch đã được msg.sender kí xác nhận "require(isConfirmed[indexTx][msg.sender], "tx not confirmed");"
     */
-    function revokeConfirmation(uint indexTx)
+    function revokeConfirmation(uint256 indexTx)
         public
         onlyAdmin
         txExists(indexTx)
@@ -168,7 +168,7 @@ contract TransferWithMultiSig is AdminConsensus {
     * Giao dịch chưa được thực hiện "notExecuted(indexTx)"
     * Đạt đủ sự đồng thuận từ những admin khác "isAccepted(indexTx)"
     */
-    function transferTokenToAddr(uint indexTx)
+    function transferTokenToAddr(uint256 indexTx)
         public
         onlyAdmin
         txExists(indexTx)
@@ -186,14 +186,18 @@ contract TransferWithMultiSig is AdminConsensus {
         emit TransferToken(msg.sender, indexTx);
     }
 
-    function getTransaction(uint indexTx)
+    function getAllTransactions() public view returns(Transaction[] memory) {
+        return _transactions;
+    }
+
+    function getTransaction(uint256 indexTx)
         public
         view
         returns (
             address to,
-            uint value,
+            uint256 value,
             bool executed,
-            uint numConfirmations
+            uint256 numConfirmations
         )
     {
         Transaction storage transaction = _transactions[indexTx];
