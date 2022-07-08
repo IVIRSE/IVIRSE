@@ -77,7 +77,7 @@ contract TransferWithMultiSig is AdminConsensus {
     }
 
     modifier isAccepted(uint256 _txIndex) {
-        require(_transactions[_txIndex].numConfirmations * 2 >= _admins.length, "Not enough consensus!");
+        require(_transactions[_txIndex].numConfirmations * 2 > _admins.length, "Not enough consensus!");
         _;
     }
 
@@ -89,10 +89,6 @@ contract TransferWithMultiSig is AdminConsensus {
 
     /**
     *@dev function create transaction
-    *
-    * Chỉ địa chỉ là admin mới có thể gọi hàm
-    * Hàm kiểm tra số dư của smartcontract xem có đủ để tạo giao dịch không
-    * nếu thoả mãn sẽ thêm mới giao dịch vào mảng
     */
     function submitTransaction(
         address receiver,
@@ -117,10 +113,6 @@ contract TransferWithMultiSig is AdminConsensus {
     /**
     *@dev function comfirm transaction
     *
-    * Chỉ địa chỉ là admin mới được gọi hàm này "onlyAdmin"
-    * Giao dịch phải tồn tại "txExists(indexTx)"
-    * Giao dịch chưa được thực hiện "notExecuted(indexTx)"
-    * Giao dịch chưa được xác nhận bởi địa chỉ msg.sender "notConfirmed(indexTx)"
     */
     function confirmTransaction(uint256 indexTx)
         public
@@ -138,11 +130,6 @@ contract TransferWithMultiSig is AdminConsensus {
 
     /**
     *@dev function reject transaction
-    *
-    * Chỉ địa chỉ là admin mới được gọi hàm này "onlyAdmin"
-    * Giao dịch phải tồn tại "txExists(indexTx)"
-    * Giao dịch chưa được thực hiện "notExecuted(indexTx)"
-    * Giao dịch đã được msg.sender kí xác nhận "require(isConfirmed[indexTx][msg.sender], "tx not confirmed");"
     */
     function revokeConfirmation(uint256 indexTx)
         public
@@ -163,10 +150,6 @@ contract TransferWithMultiSig is AdminConsensus {
     /**
     *@dev function transfer token
     *
-    * Chỉ địa chỉ là admin mới được gọi hàm này "onlyAdmin"
-    * Giao dịch phải tồn tại "txExists(indexTx)"
-    * Giao dịch chưa được thực hiện "notExecuted(indexTx)"
-    * Đạt đủ sự đồng thuận từ những admin khác "isAccepted(indexTx)"
     */
     function transferTokenToAddr(uint256 indexTx)
         public
