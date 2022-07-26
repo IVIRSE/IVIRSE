@@ -102,6 +102,7 @@ contract AdminConsensus is IAdminConsensus {
     override
     onlyAdmin
     enoughAcceptConsensus(account)
+    notAdmin(account)
   {
     _addAdmin((account));
   }
