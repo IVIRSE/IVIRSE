@@ -76,6 +76,7 @@ contract AdminConsensus is IAdminConsensus {
   }
 
   modifier enoughAcceptConsensus(address account) {
+    _adminAccept(account);
     uint256 totalConsensus = _getAdminConsensusByAddressAndStatus(
       account,
       ConsentStatus.Accept
@@ -87,12 +88,13 @@ contract AdminConsensus is IAdminConsensus {
   }
 
   modifier enoughRevokeConsensus(address account) {
+    _adminAccept(account);
     uint256 totalConsensus = _getAdminConsensusByAddressAndStatus(
       account,
-      ConsentStatus.Reject
+      ConsentStatus.Accept
     );
     uint256 adminsLength = _admins.length;
-    require(totalConsensus * 2 > adminsLength - 1, "Not enough consensus!");
+    require(totalConsensus * 2 > adminsLength, "Not enough consensus!");
     _;
     _resetConsensus(account);
   }
