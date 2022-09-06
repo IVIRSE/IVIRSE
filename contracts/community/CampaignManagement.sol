@@ -30,7 +30,7 @@ contract CampaignManagement is
   /**
    *  @dev ERC20 token for this smart contract
    */
-  IERC20 private _token;
+  IERC20 public _token;
 
   /**
    *  @dev array save all campaign name.
@@ -57,12 +57,6 @@ contract CampaignManagement is
    *  @dev Mapping from address to participant or not.
    */
   mapping(address => bool) public isParticipant;
-
-  /**
-   *@dev total token released
-   */
-
-  uint256 private _issueToken;
 
   modifier enoughReleaseConsensus(string memory campaignName) {
     uint256 totalCampaignConsensus = _getConsensusByNameAndStatus(
@@ -105,6 +99,14 @@ contract CampaignManagement is
     _;
   }
 
+  modifier isExist(string memory campaignName) {
+    require(
+      (_campaigns[campaignName].participants.length == 0),
+      "Unable to create a new campaign that already exists!"
+    );
+    _;
+  }
+
   /**
    *  @dev Set address token. Deployer is a admin.
    */
@@ -129,26 +131,8 @@ contract CampaignManagement is
     address[] memory accounts,
     uint256[] memory amounts,
     uint256 releaseTime
-  ) public override onlyAdmin nonReentrant {
-    _createOrUpdateCampaign(
-      campaignName,
-      accounts,
-      amounts,
-      releaseTime,
-      false
-    );
-  }
-
-  /**
-   *@dev Create campaign
-   */
-  function updateCampaign(
-    string memory campaignName,
-    address[] memory accounts,
-    uint256[] memory amounts,
-    uint256 releaseTime
-  ) public override onlyAdmin {
-    _createOrUpdateCampaign(campaignName, accounts, amounts, releaseTime, true);
+  ) public override onlyAdmin nonReentrant isExist(campaignName) {
+    _createCampaign(campaignName, accounts, amounts, releaseTime, false);
   }
 
   /**
@@ -243,8 +227,8 @@ contract CampaignManagement is
     return _getTotalTokenUnlock();
   }
 
-  function getTotalCanUse() public view override returns (uint256) {
-    return _getTotalTokenUnlock() - _issueToken;
+  function getTokenCanUse() public view override returns (uint256) {
+    return _getTokenCanUse();
   }
 
   function getConsensusByNameAndStatus(
@@ -252,6 +236,12 @@ contract CampaignManagement is
     AdminConsentStatus status
   ) public view override returns (uint256) {
     return _getConsensusByNameAndStatus(campaignName, status);
+  }
+
+  function getTokenUsed() public view override returns (uint256) {
+    return
+      _getUsedTokenByStatus(CampaignStatus.NoAction) +
+      _getUsedTokenByStatus(CampaignStatus.Release);
   }
 
   /**
@@ -301,47 +291,31 @@ contract CampaignManagement is
   /**
    *@dev Set a list of participant to a time and set this participant is true.
    */
-  function _createOrUpdateCampaign(
+  function _createCampaign(
     string memory _campaignName,
     address[] memory _accounts,
     uint256[] memory _amounts,
     uint256 releaseTime,
     bool _isUpdate
   ) private {
-    bool isExist = _campaigns[_campaignName].participants.length > 0;
-    require(
-      (isExist && _isUpdate) || (!isExist && !_isUpdate),
-      _isUpdate
-        ? "Can't update campaign that doesn't exist!"
-        : "Unable to create a new campaign that already exists!"
-    );
-
     _validateAccountsAndAmounts(_accounts, _amounts);
+    _campaignNames.push(_campaignName);
 
-    uint256 tokenUnlocked = _getTotalTokenUnlock();
-    if (_isUpdate) {
-      uint256 oldToken = _getTokensByName(_campaignName);
-      _issueToken -= oldToken;
-
-      delete _campaigns[_campaignName].participants;
-    } else {
-      _campaignNames.push(_campaignName);
-    }
-    uint256 tokenCanUse = tokenUnlocked - _issueToken;
     uint256 totalAmount = 0;
+    uint256 tokenCanUse = _getTokenCanUse();
     for (uint256 i = 0; i < _amounts.length; i++) {
       totalAmount += _amounts[i];
     }
-
-    require(tokenCanUse >= totalAmount, "Exceed the amount available!");
+    require(tokenCanUse >= totalAmount, "Not enough erc20 token");
 
     Participant[] storage listParticipant = _campaigns[_campaignName]
       .participants;
+
     for (uint256 i = 0; i < _accounts.length; i++) {
       listParticipant.push(Participant(_accounts[i], _amounts[i]));
       isParticipant[_accounts[i]] = true;
     }
-    _issueToken += totalAmount;
+
     _campaigns[_campaignName].releaseTime = releaseTime;
 
     emit ChangeCampaign(_campaignName, _accounts, _amounts, _isUpdate);
@@ -355,20 +329,6 @@ contract CampaignManagement is
   function _adminRejectRelease(string memory _campaign) private {
     campaignConsents[_campaign][msg.sender] = AdminConsentStatus.Reject;
     emit AdminRejectRelease(msg.sender, _campaign);
-  }
-
-  /**
-   *@dev Total token unlocked.
-   */
-  function _getTotalTokenUnlock() private view returns (uint256) {
-    uint256 totalTokenUnlock = 0;
-    uint256 currentTime = block.timestamp;
-    for (uint256 i = 0; i < _datas.length; i++) {
-      if (currentTime >= _datas[i].unlockTime) {
-        totalTokenUnlock += _datas[i].amount;
-      }
-    }
-    return totalTokenUnlock;
   }
 
   /**
@@ -398,6 +358,84 @@ contract CampaignManagement is
     for (uint256 i = 0; i < adminsLength; i++) {
       if (campaignConsents[campaignName][_admins[i]] == status) {
         totalCampaignConsensus++;
+      }
+    }
+  }
+
+  function _getTokenCanUse() private view returns (uint256 tokenCanUse) {
+    uint256 thisBalance = _token.balanceOf(address(this));
+    uint256 tokenUnlock = _getTotalTokenUnlock();
+    tokenCanUse = thisBalance < tokenUnlock ? thisBalance : tokenUnlock;
+    uint256 tokenMustNotUsed = _getTokenMustNotUsed(thisBalance < tokenUnlock);
+    if (tokenCanUse <= tokenMustNotUsed) {
+      tokenCanUse = 0;
+    } else {
+      tokenCanUse -= tokenMustNotUsed;
+    }
+  }
+
+  /**
+   *@dev Total token unlocked.
+   */
+  function _getTotalTokenUnlock() private view returns (uint256) {
+    uint256 totalTokenUnlock = 0;
+    uint256 currentTime = block.timestamp;
+    for (uint256 i = 0; i < _datas.length; i++) {
+      if (currentTime >= _datas[i].unlockTime) {
+        totalTokenUnlock += _datas[i].amount;
+      }
+    }
+    return totalTokenUnlock;
+  }
+
+  function _getTokenMustNotUsed(bool isCheckBalance)
+    private
+    view
+    returns (uint256 tokenMustNotUsed)
+  {
+    tokenMustNotUsed = isCheckBalance
+      ? _getUsedTokenByStatus(CampaignStatus.NoAction) +
+        _getAllowanceByStatus(CampaignStatus.Release)
+      : _getUsedTokenByStatus(CampaignStatus.NoAction) +
+        _getUsedTokenByStatus(CampaignStatus.Release);
+  }
+
+  function _getUsedTokenByStatus(CampaignStatus status)
+    private
+    view
+    returns (uint256 activeToken)
+  {
+    uint256 campaignLength = _campaignNames.length;
+    for (uint256 i = 0; i < campaignLength; i++) {
+      string memory name = _campaignNames[i];
+      Campaign memory campaign = _campaigns[name];
+      Participant[] memory participants = campaign.participants;
+      uint256 participantLength = participants.length;
+      if (campaign.status == status) {
+        for (uint256 j = 0; j < participantLength; j++) {
+          Participant memory joiner = participants[j];
+          activeToken += joiner.amount;
+        }
+      }
+    }
+  }
+
+  function _getAllowanceByStatus(CampaignStatus status)
+    private
+    view
+    returns (uint256 activeToken)
+  {
+    uint256 campaignLength = _campaignNames.length;
+    for (uint256 i = 0; i < campaignLength; i++) {
+      string memory name = _campaignNames[i];
+      Campaign memory campaign = _campaigns[name];
+      Participant[] memory participants = campaign.participants;
+      uint256 participantLength = participants.length;
+      if (campaign.status == status) {
+        for (uint256 j = 0; j < participantLength; j++) {
+          Participant memory joiner = participants[j];
+          activeToken += _token.allowance(address(this), joiner.account);
+        }
       }
     }
   }

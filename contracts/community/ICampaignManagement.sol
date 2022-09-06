@@ -75,13 +75,6 @@ interface ICampaignManagement {
     uint256 releaseTime
   ) external;
 
-  function updateCampaign(
-    string memory campaignName,
-    address[] memory accounts,
-    uint256[] memory amounts,
-    uint256 releaseTime
-  ) external;
-
   function adminAcceptRelease(string memory campaign) external;
 
   function adminRejectRelease(string memory campaign) external;
@@ -106,5 +99,7 @@ interface ICampaignManagement {
 
   function getTotalTokenUnlock() external view returns (uint256);
 
-  function getTotalCanUse() external view returns (uint256);
+  function getTokenCanUse() external view returns (uint256);
+
+  function getTokenUsed() external view returns (uint256);
 }
