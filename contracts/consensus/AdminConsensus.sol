@@ -35,13 +35,6 @@ contract AdminConsensus is IAdminConsensus {
    */
   mapping(address => mapping(address => ConsentStatus)) public adminConsents;
 
-  /***
-    @dev Set address token. Deployer is a admin.
-   */
-  constructor() {
-    _addAdmin(msg.sender);
-  }
-
   /**
    *@dev Throws if called by sender other than admin.
    */
@@ -94,9 +87,16 @@ contract AdminConsensus is IAdminConsensus {
       ConsentStatus.Accept
     );
     uint256 adminsLength = _admins.length;
-    require(totalConsensus * 2 > adminsLength, "Not enough consensus!");
+    require(totalConsensus * 2 > adminsLength - 1, "Not enough consensus!");
     _;
     _resetConsensus(account);
+  }
+
+  /***
+    @dev Deployer is a admin.
+   */
+  constructor() {
+    _addAdmin(msg.sender);
   }
 
   function addAdmin(address account)

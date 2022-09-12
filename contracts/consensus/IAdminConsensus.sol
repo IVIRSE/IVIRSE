@@ -31,13 +31,13 @@ interface IAdminConsensus {
 
   function addAdmin(address account) external;
 
-  function revokeAdminRole(address _account) external;
+  function revokeAdminRole(address account) external;
 
   function renounceAdminRole() external;
 
-  function adminAccept(address _account) external;
+  function adminAccept(address account) external;
 
-  function adminReject(address _account) external;
+  function adminReject(address account) external;
 
   function getAdminConsensusByAddressAndStatus(address account, ConsentStatus status)
     external
