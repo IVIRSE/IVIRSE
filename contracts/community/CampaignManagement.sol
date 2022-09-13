@@ -53,10 +53,7 @@ contract CampaignManagement is
   mapping(string => mapping(address => AdminConsentStatus))
     public campaignConsents;
 
-  /**
-   *  @dev Mapping from address to participant or not.
-   */
-  mapping(address => bool) public isParticipant;
+  Set private _participants;
 
   modifier enoughReleaseConsensus(string memory campaignName) {
     uint256 totalCampaignConsensus = _getConsensusByNameAndStatus(
@@ -313,7 +310,7 @@ contract CampaignManagement is
 
     for (uint256 i = 0; i < _accounts.length; i++) {
       listParticipant.push(Participant(_accounts[i], _amounts[i]));
-      isParticipant[_accounts[i]] = true;
+      addNewParticipant(_accounts[i]);
     }
 
     _campaigns[_campaignName].releaseTime = releaseTime;
@@ -395,7 +392,7 @@ contract CampaignManagement is
   {
     tokenMustNotUsed = isCheckBalance
       ? _getUsedTokenByStatus(CampaignStatus.NoAction) +
-        _getAllowanceByStatus(CampaignStatus.Release)
+        _getAllowanceOfParticipants()
       : _getUsedTokenByStatus(CampaignStatus.NoAction) +
         _getUsedTokenByStatus(CampaignStatus.Release);
   }
@@ -420,23 +417,26 @@ contract CampaignManagement is
     }
   }
 
-  function _getAllowanceByStatus(CampaignStatus status)
+  function _getAllowanceOfParticipants()
     private
     view
     returns (uint256 activeToken)
   {
-    uint256 campaignLength = _campaignNames.length;
-    for (uint256 i = 0; i < campaignLength; i++) {
-      string memory name = _campaignNames[i];
-      Campaign memory campaign = _campaigns[name];
-      Participant[] memory participants = campaign.participants;
-      uint256 participantLength = participants.length;
-      if (campaign.status == status) {
-        for (uint256 j = 0; j < participantLength; j++) {
-          Participant memory joiner = participants[j];
-          activeToken += _token.allowance(address(this), joiner.account);
-        }
-      }
+    address[] memory addresses = _participants.values;
+    uint256 participantLength = addresses.length;
+    for (uint256 i = 0; i < participantLength; i++) {
+      activeToken += _token.allowance(address(this), addresses[i]);
     }
+  }
+
+  function addNewParticipant(address a) public {
+    if (!_participants.is_in[a]) {
+      _participants.values.push(a);
+      _participants.is_in[a] = true;
+    }
+  }
+
+  function isParticipant(address account) public view returns (bool) {
+    return _participants.is_in[account];
   }
 }

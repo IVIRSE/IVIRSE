@@ -32,6 +32,11 @@ interface ICampaignManagement {
     uint256 amount;
   }
 
+  struct Set {
+    address[] values;
+    mapping(address => bool) is_in;
+  }
+
   /**
    *@dev struct for a participant.
    */

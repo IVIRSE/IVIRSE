@@ -87,7 +87,12 @@ contract AdminConsensus is IAdminConsensus {
       ConsentStatus.Accept
     );
     uint256 adminsLength = _admins.length;
-    require(totalConsensus * 2 > adminsLength - 1, "Not enough consensus!");
+    require(
+      adminsLength == 2
+        ? totalConsensus * 2 > adminsLength
+        : totalConsensus * 2 > adminsLength - 1,
+      "Not enough consensus!"
+    );
     _;
     _resetConsensus(account);
   }
