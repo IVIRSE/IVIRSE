@@ -1,4 +1,7 @@
 # CampaignManagement
+## Flow 
+
+![Alt text](../../images/campaignflow.png "Optional title")
 
 ## Variables
 

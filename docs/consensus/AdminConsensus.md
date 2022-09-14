@@ -1,4 +1,8 @@
 # AdminConsensus
+## Flow 
+
+![Alt text](../../images/adminflow.png "Optional title")
+![Alt text](../../images/renounceflow.png "Optional title")
 
 ## Variables
 
