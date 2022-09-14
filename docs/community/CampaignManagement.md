@@ -42,7 +42,7 @@
   mapping(string => Campaign) private _campaigns
 ```
 
-### \campaignConsents
+### campaignConsents
 
 <p style="white-space: pre;">
     The consent of the address is admin to an campaign
@@ -53,11 +53,10 @@
     public campaignConsents
 ```
 
-### \isParticipant
+### \_participants
 
 <p style="white-space: pre;">
-  Mapping address to participant(true) or not(false)
-
+  all participant join campaign
 <p>
 
 ```solidity
@@ -236,36 +235,83 @@
 
 #### Parameters list:
 
-| Name      | Type    | Description |
-| :-------- | :------ | :---------- |
-| `account` | address | address     |
+| Name           | Type   | Description   |
+| :------------- | :----- | :------------ |
+| `campaignName` | string | campaign name |
 
-### `getAdminConsensusByAddressAndStatus()`
+### `getDatas()`
 
 <p style="white-space: pre;">
-    get account consensus number by status
+    get data set in constructor
 <p>
 
 ```solidity
-    getAdminConsensusByAddressAndStatus(
-    address account,
-    ConsentStatus status
+   getDatas() public view override returns (DataByTime[] memory)
+```
+
+### `getCampaigns()`
+
+<p style="white-space: pre;">
+    get all campaign name
+<p>
+
+```solidity
+    getCampaigns() public view override returns (string[] memory)
+```
+
+### `getCampaign()`
+
+<p style="white-space: pre;">
+    get detail by campaign name
+<p>
+
+```solidity
+    getCampaign(string memory campaignName)
+    public
+    view
+    override
+    returns (Campaign memory)
+```
+
+### `getTotalTokenUnlock()`
+
+<p style="white-space: pre;">
+    get token unlock by time
+<p>
+
+```solidity
+    getTotalTokenUnlock() public view override returns (uint256)
+```
+
+### `getTokenCanUse()`
+
+<p style="white-space: pre;">
+    token can use for campaign
+<p>
+
+```solidity
+    getTokenCanUse() public view override returns (uint256)
+```
+
+### `getConsensusByNameAndStatus()`
+
+<p style="white-space: pre;">
+    get total consensus of campaign by status
+<p>
+
+```solidity
+    getConsensusByNameAndStatus(
+    string memory campaignName,
+    AdminConsentStatus status
   ) public view override returns (uint256)
 ```
 
-#### Parameters list:
-
-| Name      | Type          | Description |
-| :-------- | :------------ | :---------- |
-| `account` | address       | address     |
-| `status`  | ConsentStatus | 0,1,2       |
-
-### `getAdmins()`
+### `getTokenUsed()`
 
 <p style="white-space: pre;">
-    get list address have admin role
+    get token used for campaign
 <p>
 
 ```solidity
-    getAdmins() public view override returns (address[] memory)
+    getTokenUsed() public view override returns (uint256)
 ```

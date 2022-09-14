@@ -241,6 +241,10 @@ contract CampaignManagement is
       _getUsedTokenByStatus(CampaignStatus.Release);
   }
 
+  function isParticipant(address account) public view returns (bool) {
+    return _participants.is_in[account];
+  }
+
   /**
    *@dev
    * Validate input.
@@ -310,7 +314,7 @@ contract CampaignManagement is
 
     for (uint256 i = 0; i < _accounts.length; i++) {
       listParticipant.push(Participant(_accounts[i], _amounts[i]));
-      addNewParticipant(_accounts[i]);
+      _addNewParticipant(_accounts[i]);
     }
 
     _campaigns[_campaignName].releaseTime = releaseTime;
@@ -429,14 +433,10 @@ contract CampaignManagement is
     }
   }
 
-  function addNewParticipant(address a) public {
+  function _addNewParticipant(address a) private {
     if (!_participants.is_in[a]) {
       _participants.values.push(a);
       _participants.is_in[a] = true;
     }
-  }
-
-  function isParticipant(address account) public view returns (bool) {
-    return _participants.is_in[account];
   }
 }
