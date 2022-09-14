@@ -60,7 +60,7 @@
 <p>
 
 ```solidity
-  mapping(address => bool) public isParticipant
+  mapping(address => bool) public _participants
 ```
 
 ---
